@@ -30,7 +30,7 @@ class Future implements Promise
      *
      * @param ResponseInterface $response
      *
-     * @throws \Exception
+     * @throws \Exception|\Throwable
      */
     public function success(ResponseInterface $response)
     {
@@ -53,7 +53,7 @@ class Future implements Promise
      *
      * @param Exception $exception
      *
-     * @throws \Exception
+     * @throws \Exception|\Throwable
      */
     public function failure(Exception $exception)
     {
@@ -75,20 +75,44 @@ class Future implements Promise
      * Internal resolution
      *
      * @param $callback
+     *
+     * @throws \Exception|\Throwable
      */
     private function resolve($callback) {
         try {
             $callback();
-            // @Todo find a way to avoid using the loop as it force sync user to have an
-            // event loop implementation
         } catch (\Throwable $exception) {
-            Loop::defer(static function () use ($exception) {
-                throw $exception;
-            });
+            if ($this->hasActiveLoop()) {
+                Loop::defer(static function () use ($exception) {
+                    throw $exception;
+                });
+            }
+
+            throw $exception;
         } catch (\Exception $exception) {
-            Loop::defer(static function () use ($exception) {
-                throw $exception;
-            });
+            if ($this->hasActiveLoop()) {
+                Loop::defer(static function () use ($exception) {
+                    throw $exception;
+                });
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Check if a loop implementation is available
+     *
+     * @return bool
+     */
+    protected function hasActiveLoop()
+    {
+        try {
+            Loop::get();
+
+            return true;
+        } catch (\LogicException $exception) {
+            return false;
         }
     }
 
