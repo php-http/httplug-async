@@ -43,7 +43,7 @@ class Future implements Promise
 
         foreach ($this->callbackQueue as $onResolved) {
             $this->resolve(function () use ($onResolved, $response) {
-                $onResolved($response, null);
+                $onResolved(null, $response);
             });
         }
     }
@@ -66,7 +66,7 @@ class Future implements Promise
 
         foreach ($this->callbackQueue as $onResolved) {
             $this->resolve(function () use ($onResolved, $exception) {
-                $onResolved(null, $exception);
+                $onResolved($exception, null);
             });
         }
     }
@@ -127,13 +127,13 @@ class Future implements Promise
 
         if ($this->state === self::STATE_SUCCEEDED) {
             $this->resolve(function () use ($onResolved) {
-                $onResolved($this->response, null);
+                $onResolved(null, $this->response);
             });
         }
 
         if ($this->state === self::STATE_FAILED) {
             $this->resolve(function () use ($onResolved) {
-                $onResolved(null, $this->exception);
+                $onResolved($this->exception, null);
             });
         }
     }
