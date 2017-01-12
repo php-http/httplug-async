@@ -2,7 +2,7 @@
 
 namespace Http\Client\Async;
 
-use Interop\Async\Promise;
+use AsyncInterop\Promise;
 use Psr\Http\Message\RequestInterface;
 
 interface HttpAsyncClient

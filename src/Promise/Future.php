@@ -2,11 +2,13 @@
 
 namespace Http\Client\Async\Promise;
 
+use AsyncInterop\Promise;
 use Http\Client\Exception;
-use Interop\Async\Loop;
-use Interop\Async\Promise;
 use Psr\Http\Message\ResponseInterface;
 
+/**
+ * 
+ */
 class Future implements Promise
 {
     const STATE_PENDING = 'pending';
@@ -46,6 +48,8 @@ class Future implements Promise
                 $onResolved(null, $response);
             });
         }
+
+        $this->callbackQueue = [];
     }
 
     /**
@@ -69,51 +73,8 @@ class Future implements Promise
                 $onResolved($exception, null);
             });
         }
-    }
 
-    /**
-     * Internal resolution
-     *
-     * @param $callback
-     *
-     * @throws \Exception|\Throwable
-     */
-    private function resolve($callback) {
-        try {
-            $callback();
-        } catch (\Throwable $exception) {
-            if ($this->hasActiveLoop()) {
-                Loop::defer(static function () use ($exception) {
-                    throw $exception;
-                });
-            }
-
-            throw $exception;
-        } catch (\Exception $exception) {
-            if ($this->hasActiveLoop()) {
-                Loop::defer(static function () use ($exception) {
-                    throw $exception;
-                });
-            }
-
-            throw $exception;
-        }
-    }
-
-    /**
-     * Check if a loop implementation is available
-     *
-     * @return bool
-     */
-    protected function hasActiveLoop()
-    {
-        try {
-            Loop::get();
-
-            return true;
-        } catch (\LogicException $exception) {
-            return false;
-        }
+        $this->callbackQueue = [];
     }
 
     /**
@@ -135,6 +96,23 @@ class Future implements Promise
             $this->resolve(function () use ($onResolved) {
                 $onResolved($this->exception, null);
             });
+        }
+    }
+
+    /**
+     * Internal resolution
+     *
+     * @param $callback
+     *
+     * @throws \Exception|\Throwable
+     */
+    private function resolve($callback) {
+        try {
+            $callback();
+        } catch (\Throwable $exception) {
+            Promise\ErrorHandler::notify($exception);
+        } catch (\Exception $exception) {
+            Promise\ErrorHandler::notify($exception);
         }
     }
 }
